@@ -1,6 +1,6 @@
 
 
-for i in $(otool -L ./pyx | tail -n 9 | head -8 | cut -f 1 -d' ' | cut -f 2 -d'/'); do
+for i in $(otool -L xtb.exe | tail -n 9 | head -8 | cut -f 1 -d' ' | cut -f 2 -d'/'); do
     ls $i | grep No;
 done
 
