@@ -1,7 +1,7 @@
 """The XTB Binary Executable Files."""
 
-import os
 import subprocess
+from os import environ as ENV
 from pathlib import Path
 from platform import machine, system
 
@@ -17,9 +17,9 @@ if subprocess._mswindows:  # type: ignore
     DEFAULT_EXE = "cmd"
 else:
     DEFAULT_EXE = "bash"
-__NAME = f"{system().lower()}_{machine().lower()}"
 THIS_DIR = Path(__file__).parent
-XTB_BIN = THIS_DIR.joinpath(__NAME)
+XTB_BIN = THIS_DIR.joinpath(f"{system().lower()}_{machine().lower()}")
+ENV["XTBPATH"] = THIS_DIR.joinpath("0_params").__fspath__()
 XTB_EXE = XTB_BIN.joinpath("xtb.exe")
 
 
@@ -28,7 +28,6 @@ def run_script(
     exe: str = DEFAULT_EXE,
     outputfiles: list[str | Path] = [],
     workdir: str | Path = Path("."),
-    env: os._Environ = os.environ,
     timeout: float | None = None,
 ) -> tuple[str, str, str, bool, list[bool]]:
     """Run script by CLI based on `subprocess.Popen`.
@@ -43,7 +42,6 @@ def run_script(
         outputfiles (list[str | Path], optional): The output files that
             will be check exist of not after script run. Defaults to [].
         workdir (str | Path, optional): The workdir. Defaults to Path(".").
-        env (os._Environ, optional): The envrionment which to be run.
         timeout (float, optional): ...
 
     Returns:
@@ -61,7 +59,7 @@ def run_script(
         assert workdir.is_dir()
     else:
         workdir.mkdir(parents=True)
-    kwargs = dict(shell=True, cwd=workdir, env=env)
+    kwargs = dict(shell=True, cwd=workdir, env=ENV)
     kwargs["stdin"] = subprocess.PIPE  # type: ignore
     kwargs["stdout"] = subprocess.PIPE  # type: ignore
     kwargs["stderr"] = subprocess.PIPE  # type: ignore
@@ -128,7 +126,6 @@ def run_xtb(
     outputfiles: list[str | Path] = [],
     workdir: str | Path = Path("."),
     timeout: float | None = None,
-    envdct: dict[str, str] = {},
 ) -> tuple[str, str, str, bool, list[bool]]:
     """Run XTB by subprocess."""
     arguments = " ".join([str(arg) for arg in args])
@@ -136,10 +133,7 @@ def run_xtb(
         content = f'"{XTB_EXE.__fspath__()}" {arguments}'
     else:
         content = f"{XTB_EXE.__fspath__()} {arguments}"
-    env: os._Environ = os.environ.copy()  # type: ignore
-    for k, v in envdct.items():
-        env[str(k)] = str(v)
-    return run_script(content, DEFAULT_EXE, outputfiles, workdir, env, timeout)
+    return run_script(content, DEFAULT_EXE, outputfiles, workdir, timeout)
 
 
 def __available() -> bool:

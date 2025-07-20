@@ -27,6 +27,8 @@ xtb = "pyxtb.cli:main"
 where = ["."]
 include = ["pyxtb"]
 namespaces = true
+[tool.setuptools.package-data]
+mypkg = ["*.dylib", "*.so", "*.dll", "*.exe", "*.txt"]
 
 # uv config
 [tool.uv]
