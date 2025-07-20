@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyxtb"
+version = "0.0.1alpha"
+description = "Python wrapper for XTB Binary Executable File."
+readme = "README.md"
+requires-python = ">=3.8, <=3.13"
+dependencies = [
+    "ase>=3.25",
+    "typing-extensions",
+    "tblite; sys_platform != 'win32'",
+
+]
+[dependency-groups]
+dev = [
+    "ruff>=0.11.2",
+    "pytest>=8.3.5",
+]
+[project.scripts]
+xtb = "pyxtb.cli:main"
+
+# setuptools config
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pyxtb"]
+namespaces = true
+
+# uv config
+[tool.uv]
+package = true
+[tool.uv.sources]
+torch = { index = "torch-cpu" }
+[[tool.uv.index]]
+url = "https://mirror.nju.edu.cn/pypi/web/simple"
+default = true
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cpu"
+name = "torch-cpu"
+explicit = true
+
+# pytest config
+[tool.pytest.ini_options]
+addopts = '--maxfail=1 -rf' # exit after 1 failures, report fail info
+testpaths = ["tests"]
+filterwarnings = [
+    "error", # All other warnings are transformed into errors.
+    # ignore the following warnings that matching a regex
+    'ignore:invalid escape sequence:SyntaxWarning',
+    'ignore:module \Ssre_parse\S is deprecated:DeprecationWarning',
+    'ignore:module \Ssre_constants\S is deprecated:DeprecationWarning',
+    'ignore:Please use atoms.calc:DeprecationWarning',
+    'ignore::pytest.PytestUnraisableExceptionWarning',
+    'ignore::pytest.PytestDeprecationWarning',
+    'ignore:distutils:DeprecationWarning',
+    'ignore:joblib \S use of fork() may lead to deadlocks in the child.:DeprecationWarning',
+    'ignore::ResourceWarning',
+    'ignore::UserWarning',
+    'ignore:\Storch\S:FutureWarning',
+]
+
+# ruff config
+[tool.ruff]
+line-length = 80
+indent-width = 4
+select = ["F", "E", "W", "UP", "D"]
+ignore = ["F722", 'UP038']
+[tool.ruff.pydocstyle]
+convention = "google"
