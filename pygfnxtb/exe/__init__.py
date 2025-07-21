@@ -4,6 +4,7 @@ import subprocess
 from os import environ as ENV
 from pathlib import Path
 from platform import machine, system
+from typing import Optional, Union
 
 __all__ = [
     "XTB_BIN",
@@ -26,9 +27,9 @@ XTB_EXE = XTB_BIN.joinpath("xtb.exe")
 def run_script(
     content: str,
     exe: str = DEFAULT_EXE,
-    outputfiles: list[str | Path] = [],
-    workdir: str | Path = Path("."),
-    timeout: float | None = None,
+    outputfiles: list[Union[str, Path]] = [],
+    workdir: Union[str, Path] = Path("."),
+    timeout: Optional[float] = None,
 ) -> tuple[str, str, str, bool, list[bool]]:
     """Run script by CLI based on `subprocess.Popen`.
 
@@ -123,9 +124,9 @@ def run_script(
 
 def run_xtb(
     *args,
-    outputfiles: list[str | Path] = [],
-    workdir: str | Path = Path("."),
-    timeout: float | None = None,
+    outputfiles: list[Union[str, Path]] = [],
+    workdir: Union[str, Path] = Path("."),
+    timeout: Optional[float] = None,
 ) -> tuple[str, str, str, bool, list[bool]]:
     """Run XTB by subprocess."""
     arguments = " ".join([str(arg) for arg in args])

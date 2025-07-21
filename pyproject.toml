@@ -29,7 +29,8 @@ classifiers = [
 ]
 requires-python = ">=3.9, <=3.13"
 dependencies = [
-    "ase>=3.25",
+    "ase",
+    "numpy",
     "typing-extensions",
 ]
 [dependency-groups]
@@ -92,6 +93,6 @@ filterwarnings = [
 line-length = 80
 indent-width = 4
 select = ["F", "E", "W", "UP", "D"]
-ignore = ["F722", 'UP038']
+ignore = ["D100", "D103", "D104", "F722", 'UP038']
 [tool.ruff.pydocstyle]
 convention = "google"

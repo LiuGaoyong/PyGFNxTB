@@ -1,4 +1,3 @@
-# ruff: noqa: D100, D103
 from pygfnxtb.exe import XTB_AVAILABLE, XTB_BIN, XTB_EXE
 
 
