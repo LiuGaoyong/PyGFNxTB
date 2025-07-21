@@ -7,6 +7,26 @@ name = "pygfnxtb"
 version = "v0.0.1alpha2"
 description = "Python wrapper for XTB Binary Executable File."
 readme = "README.md"
+authors = [
+  {name = "Liu Gaoyong", email = "liugaoyong_88@163.com"},
+  {name = "The xTB Developers", email = "xtb@thch.uni-bonn.de"},
+]
+license = {file = "LICENSE"}
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Environment :: Console',
+    'Environment :: Other Environment',
+    'Intended Audience :: Education',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: GNU General Public License (GPL)',
+    'Natural Language :: English',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python',
+    'Topic :: Scientific/Engineering :: Chemistry',
+    'Topic :: Software Development :: Libraries',
+]
 requires-python = ">=3.9, <=3.13"
 dependencies = [
     "ase>=3.25",
@@ -20,6 +40,11 @@ dev = [
 ]
 [project.scripts]
 xtb = "pygfnxtb.cli:main"
+[project.urls]
+homepage = "https://github.com/LiuGaoyong/PyGFNxTB"
+repository = "https://github.com/LiuGaoyong/PyGFNxTB"
+xtb_repository = "https://github.com/grimme-lab/xtb"
+xtb_homepage = "https://xtb-docs.readthedocs.io/"
 
 # setuptools config
 [tool.setuptools.packages.find]

@@ -1,3 +1,3 @@
 # PyGFNxTB
 
-Python wrapper for XTB Binary Executable File.
+Python wrapper for [XTB](https://github.com/grimme-lab/xtb) Binary Executable File.
