@@ -8,50 +8,18 @@ on:
       - 'v*' # Alternative: only build for tags.
 jobs:
   build_wheels:
-    name: Build wheel
+    name: Build & Upload to PyPI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: |
-          uv build --wheel
+      - run: uv build --wheel --sdist
         shell: bash -el {0}
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheel.whl
-          path: ./dist/*.whl
-
-  build_sdist:  # 源代码打包单平台即可
-    name: Build source distribution
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build sdist
-        run: pipx run build --sdist
-      - uses: actions/upload-artifact@v4
+          path: ./dist/*.*
+      - name: Publish to PyPI
+        # if: github.event_name == 'release' && github.event.action == 'published'
+        uses: pypa/gh-action-pypi-publish@v1.8.12
         with:
-            name: cibw-sdist.tgz
-            path: dist/*.tar.gz
-
-  upload:
-    needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # 这里很重要，因为我启用了PyPI白名单，需要将临时生成的token写到任务程序里
-    steps:
-    - uses: actions/download-artifact@v4  # 由于这个系统跟前面的不一样，所以前两个任务需要先上载打好的包，这里再下下来
-      with:
-        # unpacks all CIBW artifacts into dist/
-        pattern: cibw-*
-        path: dist
-        merge-multiple: true
-    - name: publish to Test PyPI
-      uses: pypa/gh-action-pypi-publish@v1.8.12
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        packages-dir: dist/
-    - name: publish to PYPI
-      if: github.event_name == 'release' && github.event.action == 'published'  # 有了这句话才能只在发布的时候执行
-      uses: pypa/gh-action-pypi-publish@v1.8.12
-      with:
-        packages-dir: dist/
+          packages-dir: dist/

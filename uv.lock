@@ -258,7 +258,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://mirror.nju.edu.cn/pypi/web/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://mirror.nju.edu.cn/pypi/web/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88" }
 wheels = [
@@ -949,6 +949,35 @@ wheels = [
 ]
 
 [[package]]
+name = "pygfnxtb"
+version = "0.0.1a0"
+source = { editable = "." }
+dependencies = [
+    { name = "ase" },
+    { name = "typing-extensions" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tblite", marker = "sys_platform != 'win32'" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ase", specifier = ">=3.25" },
+    { name = "typing-extensions" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "ruff", specifier = ">=0.11.2" },
+    { name = "tblite", marker = "sys_platform != 'win32'" },
+]
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://mirror.nju.edu.cn/pypi/web/simple" }
@@ -994,35 +1023,6 @@ dependencies = [
 sdist = { url = "https://mirror.nju.edu.cn/pypi/web/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3" }
 wheels = [
     { url = "https://mirror.nju.edu.cn/pypi/web/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427" },
-]
-
-[[package]]
-name = "pyxtb"
-version = "0.0.1a0"
-source = { editable = "." }
-dependencies = [
-    { name = "ase" },
-    { name = "tblite", marker = "sys_platform != 'win32'" },
-    { name = "typing-extensions" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ase", specifier = ">=3.25" },
-    { name = "tblite", marker = "sys_platform != 'win32'" },
-    { name = "typing-extensions" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "ruff", specifier = ">=0.11.2" },
 ]
 
 [[package]]

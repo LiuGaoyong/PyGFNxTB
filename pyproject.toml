@@ -11,13 +11,12 @@ requires-python = ">=3.9, <=3.13"
 dependencies = [
     "ase>=3.25",
     "typing-extensions",
-    "tblite; sys_platform != 'win32'",
-
 ]
 [dependency-groups]
 dev = [
     "ruff>=0.11.2",
     "pytest>=8.3.5",
+    "tblite; sys_platform != 'win32'",
 ]
 [project.scripts]
 xtb = "pygfnxtb.cli:main"
