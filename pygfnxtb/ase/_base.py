@@ -1,5 +1,5 @@
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import mkdtemp
 from typing import Optional
 
 import numpy as np
@@ -38,7 +38,7 @@ class XTB(ase_calc.Calculator):
         ignore_bad_restart_file=ase_calc.BaseCalculator._deprecated,
         label=None,
         atoms: Optional[Atoms] = None,
-        directory: str = TemporaryDirectory(),  # type: ignore
+        directory: str = mkdtemp(),  # type: ignore
         **kwargs,
     ) -> None:
         super().__init__(
@@ -46,7 +46,7 @@ class XTB(ase_calc.Calculator):
             label=label,
             restart=restart,
             ignore_bad_restart_file=ignore_bad_restart_file,
-            directory=Path(str(directory)).absolute().__fspath__(),
+            directory=Path(directory).absolute().__fspath__(),
             **kwargs,
         )
         assert isinstance(self.parameters, ase_calc.Parameters)

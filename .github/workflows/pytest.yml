@@ -1,9 +1,8 @@
-name: Test on Win64, Linux64 & MacOS-Arm64
 on: [push, pull_request]
 
 jobs:
   test:
-    name: Pytest on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
