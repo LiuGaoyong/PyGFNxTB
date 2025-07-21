@@ -112,8 +112,13 @@ def run_script(
     if is_success and exe == "cmd":
         out, nPS = out.strip().splitlines(), []
         for i, line in enumerate(out):
-            if line.lower().startswith(f"{workdir.resolve()}>".lower()):
-                nPS.append(i)
+            if ">" in line:
+                try:
+                    p_startswith = Path(line.split(">")[0])
+                    if p_startswith.resolve() == workdir.resolve():
+                        nPS.append(i)
+                except Exception:
+                    pass
         if len(nPS) == 1:
             nPS.append(len(out))
         assert len(nPS) == 2, f"nPS: {nPS}\nout: {out}\ncontent: {content}"
@@ -154,3 +159,7 @@ def __available() -> bool:
 
 
 XTB_AVAILABLE = __available()
+
+
+if __name__ == "__main__":
+    print(XTB_AVAILABLE)
