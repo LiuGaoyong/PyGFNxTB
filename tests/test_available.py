@@ -1,5 +1,5 @@
 # ruff: noqa: D100, D103
-from pyxtb.exe import XTB_AVAILABLE, XTB_BIN, XTB_EXE
+from pygfnxtb.exe import XTB_AVAILABLE, XTB_BIN, XTB_EXE
 
 
 def test_available():

@@ -3,7 +3,7 @@
 
 from sys import argv
 
-from pyxtb.exe import run_xtb
+from pygfnxtb.exe import run_xtb
 
 
 def __run_xtb() -> str:

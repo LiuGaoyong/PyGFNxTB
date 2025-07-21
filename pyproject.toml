@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyxtb"
+name = "pygfnxtb"
 version = "0.0.1alpha"
 description = "Python wrapper for XTB Binary Executable File."
 readme = "README.md"
@@ -20,12 +20,12 @@ dev = [
     "pytest>=8.3.5",
 ]
 [project.scripts]
-xtb = "pyxtb.cli:main"
+xtb = "pygfnxtb.cli:main"
 
 # setuptools config
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["pyxtb"]
+include = ["pygfnxtb"]
 namespaces = true
 [tool.setuptools.package-data]
 mypkg = ["*.dylib", "*.so", "*.dll", "*.exe", "*.txt"]
