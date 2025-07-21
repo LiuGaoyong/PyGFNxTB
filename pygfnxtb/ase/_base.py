@@ -1,8 +1,10 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Optional
 
 import numpy as np
 from ase import Atoms
+from ase import units as U
 from ase.calculators import calculator as ase_calc
 
 from pygfnxtb.exe import run_xtb as _run_xtb
@@ -16,13 +18,11 @@ class XTB(ase_calc.Calculator):
     implemented_properties = [
         "energy",
         "forces",
-        "charges",
-        "dipole",
-        # "stress", # Cannot support stress calculation for now.
+        "stress",
     ]
 
     default_parameters = {
-        "method": "GFN2-xTB",
+        "method": "GFN0-xTB",
         "charge": None,
         "multiplicity": None,
         "accuracy": 1.0,
@@ -40,15 +40,15 @@ class XTB(ase_calc.Calculator):
         ignore_bad_restart_file=ase_calc.BaseCalculator._deprecated,
         label=None,
         atoms: Optional[Atoms] = None,
-        directory=".",
+        directory=TemporaryDirectory(),
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(
-            restart,
-            ignore_bad_restart_file,
-            label,
-            atoms,
-            directory,
+            atoms=atoms,
+            label=label,
+            restart=restart,
+            ignore_bad_restart_file=ignore_bad_restart_file,
+            directory=Path(str(directory)).absolute().__fspath__(),
             **kwargs,
         )
         assert isinstance(self.parameters, ase_calc.Parameters)
@@ -74,24 +74,34 @@ class XTB(ase_calc.Calculator):
         properties = ["energy", "forces"] if not properties else properties
         ase_calc.Calculator.calculate(self, atoms, properties, system_changes)
 
+        # Write coordinates to xyz or POSCAR format.
         assert isinstance(self.atoms, Atoms), "No atoms object set."
         Path(self.directory).mkdir(parents=True, exist_ok=True)
         if np.all(self.atoms.cell.lengths() < 1e-3):
             fname, format = "xtb.xyz", "xyz"
+            pbc = False
         else:
+            pbc = True
             fname, format = "POSCAR", "vasp"
+            if self._method[3] == "2":
+                raise ase_calc.CalculatorError(
+                    f"The method of {self._method} isn't available"
+                    " with periodic boundary conditions."
+                )
         self.atoms.write(Path(self.directory) / fname, format=format)
 
-        # xtb [options] <geometry> [options]
-        args: list[str] = [fname, self.__method, "--grad"]
-        outs: list[str] = ["energy", "gradient", "gradlatt"]
-        if self._method.upper() == "GFNFF":
-            outs.append("gfnff_charges")
-        else:
-            outs.append("charges")
-        content, out, err, is_success, filesexist = _run_xtb(
+        # Call xtb.exe and chech output files
+        args: list[str] = [fname, self.__method, "--grad -I xtb.inp"]
+        outs: list[str] = ["energy", "gradient"]
+        if pbc:
+            outs.append("gradlatt")
+        with open(Path(self.directory) / "xtb.inp", "w") as f:
+            f.write("$write\n")
+            f.write("  dipole=true\n")
+            f.write("  charges=true\n")
+        content, _, err, is_success, filesexist = _run_xtb(
             *args,
-            outputfiles=[str(i) for i in outs],
+            outputfiles=[f for f in outs],
             workdir=Path(self.directory),
         )
         if not is_success:
@@ -105,8 +115,20 @@ class XTB(ase_calc.Calculator):
                     f"XTB calculation failed: {f} not exist."
                 )
 
-        print(out)
-        assert False, "Not implemented."
+        # Parse output files into results
+        with Path(self.directory).joinpath("energy").open() as f:
+            e = float(f.readlines()[1].split()[1]) * U.Hartree / U.eV
+            self.results["energy"] = self.results["free_energy"] = e
+        with Path(self.directory).joinpath("gradient").open() as f:
+            v = f.readlines()[2 + len(self.atoms) : 2 + 2 * len(self.atoms)]
+            f = np.loadtxt(v) * (U.Hartree / U.Bohr) / (U.eV / U.Angstrom)
+            assert f.shape == (len(self.atoms), 3), ""
+            self.results["forces"] = f
+        if pbc:
+            with Path(self.directory).joinpath("gradlatt").open() as f:
+                virial = np.loadtxt(f.readlines()[2 + 3 : 2 + 2 * 3])
+                virial *= (U.Hartree / U.Bohr) / (U.eV / U.Angstrom)
+            self.results["stress"] = virial.flat[[0, 4, 8, 5, 2, 1]]
 
 
 if __name__ == "__main__":
@@ -116,3 +138,5 @@ if __name__ == "__main__":
     atoms *= (2, 2, 2)
     atoms.calc = XTB()
     print(atoms.get_potential_energy())
+    print(atoms.get_forces())
+    print(atoms.get_stress())
