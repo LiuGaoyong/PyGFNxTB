@@ -22,15 +22,13 @@ class XTB(ase_calc.Calculator):
     ]
 
     default_parameters = {
-        "method": "GFN0-xTB",
+        "method": "GFN1-xTB",
         "charge": None,
         "multiplicity": None,
         "accuracy": 1.0,
         "guess": "sad",
         "max_iterations": 250,
         "mixer_damping": 0.4,
-        "electric_field": None,
-        "spin_polarization": None,
         "electronic_temperature": 300.0,
     }
 
@@ -40,7 +38,7 @@ class XTB(ase_calc.Calculator):
         ignore_bad_restart_file=ase_calc.BaseCalculator._deprecated,
         label=None,
         atoms: Optional[Atoms] = None,
-        directory=TemporaryDirectory(),
+        directory: str = TemporaryDirectory(),  # type: ignore
         **kwargs,
     ) -> None:
         super().__init__(
@@ -59,6 +57,7 @@ class XTB(ase_calc.Calculator):
             self._method = self._method.upper()[:4]
             self.__method = f"--gfn {self._method[3]}"
         else:
+            self._method = self._method.upper()
             self.__method = "--gfnff"
         assert self._method in ["GFNFF", "GFN0", "GFN1", "GFN2"], (
             f"Invalid: {self._method.upper()}."
@@ -73,6 +72,7 @@ class XTB(ase_calc.Calculator):
         """Perform actual calculation with by calling the XTB exec."""
         properties = ["energy", "forces"] if not properties else properties
         ase_calc.Calculator.calculate(self, atoms, properties, system_changes)
+        assert isinstance(self.parameters, ase_calc.Parameters)
 
         # Write coordinates to xyz or POSCAR format.
         assert isinstance(self.atoms, Atoms), "No atoms object set."
@@ -83,37 +83,59 @@ class XTB(ase_calc.Calculator):
         else:
             pbc = True
             fname, format = "POSCAR", "vasp"
-            if self._method[3] == "2":
+            if self._method[3] != "0":
                 raise ase_calc.CalculatorError(
-                    f"The method of {self._method} isn't available"
-                    " with periodic boundary conditions."
+                    f"The method of {self._method} isn't available with "
+                    "periodic boundary conditions. Only GFN0 supports it."
                 )
         self.atoms.write(Path(self.directory) / fname, format=format)
 
         # Call xtb.exe and chech output files
         args: list[str] = [fname, self.__method, "--grad -I xtb.inp"]
+        args.append(f"--acc {self.parameters.get('accuracy', 1.0)}")
+        args.append("--pop --verbose --norestart")
+        with open(Path(self.directory) / "xtb.inp", "w") as f:
+            chg: Optional[int] = self.parameters.get("charge", None)
+            if chg is not None and int(chg) != 0:
+                f.write(f"$chrg {str(int(chg))}")
+            mtp: Optional[int] = self.parameters.get("multiplicity", None)
+            if mtp is not None:
+                f.write(f"$spin {str(int(2 * (mtp + 1) + 1))}")
+            f.write("$scc\n")
+            guess = self.parameters.get("guess", "sad")
+            mixer = self.parameters.get("mixer_damping", 0.4)
+            maxiter = self.parameters.get("max_iterations", 250)
+            etemp = self.parameters.get("electronic_temperature", 300.0)
+            f.write(f"  temp={etemp:.5f}\n")
+            f.write(f"  iterations={maxiter:d}\n")
+            f.write(f"  broydamp={mixer:.5f}\n")
+            f.write(f"  guess={guess:s}\n")
+            f.write("$write\n")
+            f.write("  esp=true\n")
+            f.write("  dipole=true\n")
+            f.write("  charges=true\n")
+            f.write("  mulliken=true\n")
         outs: list[str] = ["energy", "gradient"]
         if pbc:
             outs.append("gradlatt")
-        with open(Path(self.directory) / "xtb.inp", "w") as f:
-            f.write("$write\n")
-            f.write("  dipole=true\n")
-            f.write("  charges=true\n")
-        content, _, err, is_success, filesexist = _run_xtb(
+        content, out, err, is_success, filesexist = _run_xtb(
             *args,
             outputfiles=[f for f in outs],
             workdir=Path(self.directory),
         )
         if not is_success:
             raise ase_calc.CalculatorError(
-                f"XTB calculation failed: {err}. "
-                f"The XTB command by CLI is {content}."
+                f"XTB calculation failed:\n{err}\n"
+                f"XTB calculation outpt:\n{out}\n"
+                f"The XTB command by CLI is {content}\n"
             )
         for f, exist in zip(outs, filesexist):
             if not exist:
                 raise ase_calc.CalculatorError(
                     f"XTB calculation failed: {f} not exist."
                 )
+        # outdata = out.splitlines()
+        # TODO: check accuracy of calculation for outdata
 
         # Parse output files into results
         with Path(self.directory).joinpath("energy").open() as f:
@@ -121,14 +143,19 @@ class XTB(ase_calc.Calculator):
             self.results["energy"] = self.results["free_energy"] = e
         with Path(self.directory).joinpath("gradient").open() as f:
             v = f.readlines()[2 + len(self.atoms) : 2 + 2 * len(self.atoms)]
-            f = np.loadtxt(v) * (U.Hartree / U.Bohr) / (U.eV / U.Angstrom)
-            assert f.shape == (len(self.atoms), 3), ""
+            f = -np.loadtxt(v) * (U.Hartree / U.Bohr) / (U.eV / U.Angstrom)
+            if len(self.atoms) > 1:
+                assert f.shape == (len(self.atoms), 3), f"{f.shape}: {f}"
+            elif len(self.atoms) == 1:
+                assert f.shape == (3,), f"{f.shape}: {f}"
+            else:
+                pass
             self.results["forces"] = f
         if pbc:
             with Path(self.directory).joinpath("gradlatt").open() as f:
                 virial = np.loadtxt(f.readlines()[2 + 3 : 2 + 2 * 3])
-                virial *= (U.Hartree / U.Bohr) / (U.eV / U.Angstrom)
-            self.results["stress"] = virial.flat[[0, 4, 8, 5, 2, 1]]
+                _stress = virial * U.Hartree / self.atoms.get_volume()
+            self.results["stress"] = _stress.flat[[0, 4, 8, 5, 2, 1]]
 
 
 if __name__ == "__main__":
@@ -136,7 +163,7 @@ if __name__ == "__main__":
 
     atoms = bulk("Cu", "fcc", 4.3)
     atoms *= (2, 2, 2)
-    atoms.calc = XTB()
+    atoms.calc = XTB(directory=".", method="GFN0-xTB")
     print(atoms.get_potential_energy())
     print(atoms.get_forces())
     print(atoms.get_stress())
