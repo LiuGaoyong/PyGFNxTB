@@ -116,7 +116,7 @@ def run_script(
                 nPS.append(i)
         if len(nPS) == 1:
             nPS.append(len(out))
-        assert len(nPS) == 2
+        assert len(nPS) == 2, f"nPS: {nPS}\nout: {out}\ncontent: {content}"
         out = "\n".join(out[nPS[0] + 1 : nPS[1]])
 
     return (content, out, err, is_success, filesexist)
