@@ -1,4 +1,4 @@
-name: publish python package to PyPI
+name: Publish Python Package to PyPI
 
 on:
   release:
@@ -22,6 +22,6 @@ jobs:
           path: ./dist/*.*
       - name: Publish to PyPI
         # if: github.event_name == 'release' && github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@v1.8.12
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
