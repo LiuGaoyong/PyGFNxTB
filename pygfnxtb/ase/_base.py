@@ -1,3 +1,4 @@
+from os import cpu_count
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Optional
@@ -30,6 +31,8 @@ class XTB(ase_calc.Calculator):
         "max_iterations": 250,
         "mixer_damping": 0.4,
         "electronic_temperature": 300.0,
+        "omp_threads": cpu_count(),
+        "solvent": None,
     }
 
     def __init__(
@@ -49,19 +52,63 @@ class XTB(ase_calc.Calculator):
             directory=Path(directory).absolute().__fspath__(),
             **kwargs,
         )
+        self._check_solvent()
+        self._parse_method()
+
+    def _parse_method(self) -> None:
         assert isinstance(self.parameters, ase_calc.Parameters)
-        self._method: str = self.parameters.get("method", "GFNFF")
-        assert self._method.upper()[:3] == "GFN", f"Invalid: {self._method}."
-        if self._method.upper() != "GFNFF":
-            assert self._method[3] in "012", f"Invalid: {self._method}."
-            self._method = self._method.upper()[:4]
-            self.__method = f"--gfn {self._method[3]}"
-        else:
-            self._method = self._method.upper()
-            self.__method = "--gfnff"
-        assert self._method in ["GFNFF", "GFN0", "GFN1", "GFN2"], (
-            f"Invalid: {self._method.upper()}."
-        )
+        try:
+            self._method: str = self.parameters.get("method", "GFNFF")
+            assert self._method.upper()[:3] == "GFN", (
+                f"Invalid: {self._method}."
+            )
+            if self._method.upper() != "GFNFF":
+                assert self._method[3] in "012", f"Invalid: {self._method}."
+                self._method = self._method.upper()[:4]
+                self.__method = f"--gfn {self._method[3]}"
+            else:
+                self._method = self._method.upper()
+                self.__method = "--gfnff"
+            assert self._method in ["GFNFF", "GFN0", "GFN1", "GFN2"], (
+                f"Invalid: {self._method.upper()}."
+            )
+        except Exception as e:
+            raise ase_calc.InputError(e)
+
+    def _check_solvent(self) -> None:
+        assert isinstance(self.parameters, ase_calc.Parameters)
+        try:
+            self._solvent = self.parameters.get("solvent", None)
+            if self._solvent is not None:
+                self._solvent = self._solvent.lower()
+                assert self._solvent in [
+                    "acetone",
+                    "acetonitrile",
+                    "aniline",
+                    "benzaldehyde",
+                    "benzene",
+                    "ch2cl2",
+                    "chcl3",
+                    "cs2",
+                    "dioxane",
+                    "dmf",
+                    "dmso",
+                    "ether",
+                    "ethylacetate",
+                    "furane",
+                    "hexandecane",
+                    "hexane",
+                    "methanol",
+                    "nitromethane",
+                    "octanol",
+                    "woctanol",
+                    "phenol",
+                    "toluene",
+                    "thf",
+                    "water",
+                ], f"Invalid solvent: {self._solvent}."
+        except Exception as e:
+            raise ase_calc.InputError(e)
 
     def calculate(
         self,
@@ -74,6 +121,10 @@ class XTB(ase_calc.Calculator):
         ase_calc.Calculator.calculate(self, atoms, properties, system_changes)
         assert isinstance(self.parameters, ase_calc.Parameters)
 
+        # Parse method & solvent in the parameters.
+        self._check_solvent()
+        self._parse_method()
+
         # Write coordinates to xyz or POSCAR format.
         assert isinstance(self.atoms, Atoms), "No atoms object set."
         Path(self.directory).mkdir(parents=True, exist_ok=True)
@@ -84,7 +135,7 @@ class XTB(ase_calc.Calculator):
             pbc = True
             fname, format = "POSCAR", "vasp"
             if self._method[3] != "0":
-                raise ase_calc.CalculatorError(
+                raise ase_calc.InputError(
                     f"The method of {self._method} isn't available with "
                     "periodic boundary conditions. Only GFN0 supports it."
                 )
@@ -93,7 +144,12 @@ class XTB(ase_calc.Calculator):
         # Call xtb.exe and chech output files
         args: list[str] = [fname, self.__method, "--grad -I xtb.inp"]
         args.append(f"--acc {self.parameters.get('accuracy', 1.0)}")
-        args.append("--pop --verbose --norestart")
+        p = self.parameters.get("omp_threads", None)
+        if p is None:
+            p = 1 if p is None else p
+        if self._solvent is not None:
+            args.append(f"--gbsa {self._solvent:s}")
+        args.append(f"--pop --verbose --norestart --parallel {p:d}")
         with open(Path(self.directory) / "xtb.inp", "w") as f:
             chg: Optional[int] = self.parameters.get("charge", None)
             if chg is not None and int(chg) != 0:
@@ -124,15 +180,15 @@ class XTB(ase_calc.Calculator):
             workdir=Path(self.directory),
         )
         if not is_success:
-            raise ase_calc.CalculatorError(
+            raise ase_calc.CalculationFailed(
                 f"XTB calculation failed:\n{err}\n"
                 f"XTB calculation outpt:\n{out}\n"
                 f"The XTB command by CLI is {content}\n"
             )
         for f, exist in zip(outs, filesexist):
             if not exist:
-                raise ase_calc.CalculatorError(
-                    f"XTB calculation failed: {f} not exist."
+                raise FileExistsError(
+                    f"The file of {f} do not exist after XTB calculation."
                 )
         # outdata = out.splitlines()
         # TODO: check accuracy of calculation for outdata

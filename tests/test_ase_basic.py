@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from ase.atoms import Atoms
 from ase.build import bulk, molecule
+from ase.calculators.calculator import InputError
 from ase.cluster import Octahedron
 
 from pygfnxtb.ase import XTB
@@ -51,3 +52,9 @@ def test_XTB_by_tblite(atoms: Atoms, method: str):
 
     assert np.all(np.abs(e0 - e1) < 0.005)
     assert np.all(np.abs(f0 - f1) < 0.005)
+
+
+def test_invalid_method():
+    """GFN-xTB without method number is invalid, should raise an input error."""
+    with pytest.raises(InputError):
+        XTB(method="GFN-xTB")
