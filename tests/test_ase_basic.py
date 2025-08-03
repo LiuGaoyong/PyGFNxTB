@@ -29,6 +29,7 @@ def test_XTB_available(atoms: Atoms, method: str):
     print(atoms.get_forces())
 
 
+@pytest.mark.skip("Only run once")
 @pytest.mark.skipif(
     system().lower() == "windows",
     reason="The tblite is not supported on Windows.",

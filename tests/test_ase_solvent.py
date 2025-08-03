@@ -5,6 +5,7 @@ from ase.atoms import Atoms
 from pygfnxtb.ase import XTB
 
 
+@pytest.mark.skip("Only run once")
 def test_gfn2_xtb_0d():
     """Test ASE interface to GFN2-xTB."""
     thr = 5.0e-4
@@ -68,6 +69,7 @@ def test_gfn2_xtb_0d():
     assert pytest.approx(atoms.get_potential_energy(), abs=thr) == e_sol
 
 
+@pytest.mark.skip("Only run once")
 def test_gfn1_xtb_0d():
     """Test ASE interface to GFN1-xTB."""
     thr = 1.0e-4

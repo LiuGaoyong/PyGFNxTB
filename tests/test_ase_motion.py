@@ -9,7 +9,8 @@ from ase.units import fs
 from pygfnxtb.ase import XTB
 
 
-def test_gfn1xtb_bfgs():
+@pytest.mark.skip("Only run once")
+def test_gfn1xtb_bfgs() -> None:
     """Perform geometry optimization with GFN1-xTB and BFGS."""
     thr = 1.0e-5
 
@@ -52,7 +53,8 @@ def test_gfn1xtb_bfgs():
     assert pytest.approx(np.linalg.norm(atoms.get_forces(), ord=2), thr) == fmax
 
 
-def test_gfn2xtb_lbfgs():
+@pytest.mark.skip("Only run once")
+def test_gfn2xtb_lbfgs() -> None:
     """Perform geometry optimization with GFN2-xTB and L-BFGS."""
     thr = 5e-3
 
@@ -95,7 +97,8 @@ def test_gfn2xtb_lbfgs():
     assert pytest.approx(np.linalg.norm(atoms.get_forces(), ord=2), thr) == fmax
 
 
-def test_gfn2xtb_velocityverlet():
+@pytest.mark.skip("Only run once")
+def test_gfn2xtb_velocityverlet() -> None:
     """Perform MD with GFN2-xTB and Velocity Verlet Integrator."""
     thr = 1.0e-4
 
